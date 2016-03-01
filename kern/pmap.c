@@ -165,6 +165,7 @@ mem_init(void)
 
 	check_page_free_list(1);
 	check_page_alloc();
+    panic("up here");
 	check_page();
     panic("up here");
 	//////////////////////////////////////////////////////////////////////
