@@ -281,6 +281,14 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   'va' and 'len' values that are not page-aligned.
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
+    void* i;
+    for(i=ROUNDDOWN(va,PGSIZE);i<ROUNDUP(va+len,PGSIZE);i+=PGSIZE)
+    {
+        struct PageInfo* p=page_alloc(1);
+        if(p==NULL)
+            panic("Memory out!");
+        page_insert(e->env_pgdir,p,i,PTE_W|PTE_U|PTE_P);       
+    }
 }
 
 //
@@ -337,10 +345,29 @@ load_icode(struct Env *e, uint8_t *binary)
 	//  What?  (See env_run() and env_pop_tf() below.)
 
 	// LAB 3: Your code here.
-
+    lcr3(PADDR(e->env_pgdir));  
+    struct Elf* ELFHDR=(struct Elf*)binary;
+    struct Proghdr *ph, *eph;
+    uint32_t* size;
+    if(ELFHDR->e_magic!=ELF_MAGIC)
+        panic("binary not point to the elfhdr");
+    ph = (struct Proghdr *) ((uint8_t *) ELFHDR + ELFHDR->e_phoff);
+	eph = ph + ELFHDR->e_phnum;
+	for (; ph < eph; ph++)
+    {
+        if(ph->p_type!=ELF_PROG_LOAD) continue;
+        if(ph->p_type==ELF_PROG_LOAD)
+        {
+            region_alloc(e,(void*)ph->p_va,ph->p_memsz);
+            memmove((void*)ph->p_va,binary+ph->p_offset,ph->p_filesz);
+            memset((void*)(ph->p_va+ph->p_filesz),0,ph->p_memsz-ph->p_filesz);
+        } 
+    }
+    
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
-
+    region_alloc(e,(void*)(USTACKTOP - PGSIZE),PGSIZE);
+    lcr3(PADDR(kern_pgdir));  
 	// LAB 3: Your code here.
 }
 
@@ -355,6 +382,12 @@ void
 env_create(uint8_t *binary, enum EnvType type)
 {
 	// LAB 3: Your code here.
+    struct Env* env=0;
+    int r=env_alloc(&env,0);
+    if(r<0)
+        panic("env_alloc fault\n");
+    load_icode(env,binary);
+    env->env_type=type;
 }
 
 //
@@ -470,7 +503,13 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
-
-	panic("env_run not yet implemented");
+    if(curenv) curenv->env_status=2;
+    curenv=e;
+    e->env_status=ENV_RUNNING;
+    e->env_runs++;
+    
+    lcr3(PADDR(e->env_pgdir));
+    
+    env_pop_tf(&(e->env_tf));
 }
 
