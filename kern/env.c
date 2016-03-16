@@ -117,13 +117,13 @@ env_init(void)
 	// Set up envs array
 	// LAB 3: Your code here.
     int i;
-    for(i=0;i<NENV;i++){
+    for(i=NENV-1;i>=0;i--){
         envs[i].env_status=0;
         envs[i].env_id=0;
         envs[i].env_link=env_free_list;
         env_free_list=&envs[i];       
     }
-    env_free_list=&envs[0];
+
     
 	// Per-CPU part of the initialization
 	env_init_percpu();
