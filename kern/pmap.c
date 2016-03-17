@@ -219,8 +219,10 @@ mem_init(void)
 	// Your code goes here:
     boot_map_region(kern_pgdir,(uintptr_t)KERNBASE,~KERNBASE + 1,(physaddr_t)(0),PTE_W | PTE_P);
 
+
 	// Initialize the SMP-related parts of the memory map
 	mem_init_mp();
+
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
@@ -349,6 +351,7 @@ page_init(void)
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
     }
+
     
     //lab4 reserve address for MPENTRY_PAGENUM
     uint32_t MPENTRY_PAGENUM=PGNUM(MPENTRY_PADDR);
@@ -356,6 +359,7 @@ page_init(void)
     pages[MPENTRY_PAGENUM+1].pp_link=pages[MPENTRY_PAGENUM].pp_link;
     pages[MPENTRY_PAGENUM].pp_link=NULL;
     
+
 }
 
 //
