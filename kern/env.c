@@ -192,10 +192,8 @@ env_setup_vm(struct Env *e)
 	// LAB 3: Your code here.
     (p->pp_ref)++;
     e->env_pgdir=(pde_t *)page2kva(p);
-    for(i=PDX(UTOP);i<1024;i++)
-    {
-        e->env_pgdir[i]=kern_pgdir[i];
-    }
+    memcpy(e->env_pgdir,kern_pgdir,PGSIZE);
+
 
 	// UVPT maps the env's own page table read-only.
 	// Permissions: kernel R, user R
@@ -532,13 +530,13 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
-    if(curenv) curenv->env_status=2;
+    if(curenv) curenv->env_status=ENV_RUNNABLE;
     curenv=e;
     e->env_status=ENV_RUNNING;
     e->env_runs++;
     
     lcr3(PADDR(e->env_pgdir));
-    
+    unlock_kernel();
     env_pop_tf(&(e->env_tf));
 }
 
